@@ -9,6 +9,7 @@ import MatchDetail from './pages/MatchDetail';
 import LeaderboardView from './pages/LeaderboardView';
 import LeagueSettings from './pages/LeagueSettings';
 import SetupUser from './pages/SetupUser';
+import ChangePassword from './pages/ChangePassword';
 
 const AppContext = createContext();
 
@@ -129,12 +130,11 @@ export default function App() {
   });
 
   const [predictions, setPredictions] = useState({});
-  const [conditionalPenalties, setConditionalPenalties] = useState({}); // { matchId: { targetPlayer, cond1Pts, cond1Text, cond2Pts, cond2Text } }
+  const [conditionalPenalties, setConditionalPenalties] = useState({});
   const [penalties, setPenalties] = useState([
     { id: 1, from: 'Andrea', to: 'Luca', text: 'Fare una story su Instagram ringraziandomi per avergli insegnato il calcio.', status: 'pending' }
   ]);
 
-  // Stato per la notifica push simulata (in-app banner)
   const [pushNotification, setPushNotification] = useState(null);
 
   const triggerPush = (title, message) => {
@@ -220,21 +220,10 @@ export default function App() {
     return pts;
   };
 
-  // Aggiornamento simulato ogni 5 minuti (nella demo ridotto a 30s per mostrare notifiche)
-  useEffect(() => {
-    const timer = setInterval(() => {
-      // Simula aggiornamenti minori o ping
-      console.log("Aggiornamento dati in corso...");
-    }, 300000); // 5 minuti
-
-    return () => clearInterval(timer);
-  }, []);
-
   const simulateLiveMatch = (matchId) => {
     const matchIndex = matches.findIndex(m => m.id === matchId);
     if (matchIndex === -1) return;
 
-    // 1. Notifica inizio match
     triggerPush("⚽ Partita Iniziata!", `Argentina vs Capo Verde è iniziata live.`);
 
     setTimeout(() => {
@@ -276,7 +265,6 @@ export default function App() {
         return copy;
       });
 
-      // Ricalcola punteggio utente
       let myPts = 0;
       setPlayers(prevPlayers => {
         return prevPlayers.map(player => {
@@ -301,7 +289,6 @@ export default function App() {
 
       triggerPush("🏁 Partita Terminata!", `Risultato finale Argentina 3 - 1 Capo Verde. Hai totalizzato +${myPts} punti.`);
 
-      // Controlla le penitenze condizionali impostate per questo match
       const condPenalty = conditionalPenalties[matchId];
       if (condPenalty && condPenalty.targetPlayer) {
         let triggeredText = "";
@@ -369,7 +356,6 @@ export default function App() {
       <Router>
         <div className="app-container">
           
-          {/* iOS Push Notification Banner */}
           {pushNotification && (
             <div className="push-banner">
               <div className="push-icon-container">
@@ -384,6 +370,8 @@ export default function App() {
 
           {!currentUser ? (
             <SetupUser />
+          ) : currentUser.requiresPasswordChange ? (
+            <ChangePassword />
           ) : (
             <>
               <Routes>
