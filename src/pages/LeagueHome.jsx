@@ -41,6 +41,15 @@ export default function LeagueHome() {
         <h3 style={{ margin: '32px 0 16px 0' }}>Gestione</h3>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {currentUser?.role === 'admin' && (
+            <Link 
+              to="/admin/users" 
+              className="btn btn-secondary" 
+              style={{ display: 'flex', gap: '8px', textDecoration: 'none', color: 'inherit', alignItems: 'center' }}
+            >
+              <Users size={20} className="text-accent" /> Gestione Utenti
+            </Link>
+          )}
           <button className="btn btn-secondary" style={{ display: 'flex', gap: '8px' }}>
             <Plus size={20} className="text-accent" /> Crea Nuova Lega
           </button>

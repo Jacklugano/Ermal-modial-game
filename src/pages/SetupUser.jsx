@@ -25,31 +25,60 @@ export default function SetupUser() {
     if (isDemoMode) {
       // --- MODALITÀ DEMO LOCALE ---
       setTimeout(() => {
+        const storedUsers = localStorage.getItem('localUsers');
+        const usersList = storedUsers ? JSON.parse(storedUsers) : [
+          { uid: 'andrea', name: 'Andrea', email: 'andrea@example.com', points: 42, role: 'player', status: 'approved' },
+          { uid: 'enea', name: 'Enea', email: 'enea@example.com', points: 30, role: 'player', status: 'approved' },
+          { uid: 'luca', name: 'Luca', email: 'luca@example.com', points: 15, role: 'player', status: 'approved' },
+          { uid: 'admin', name: 'Admin', email: 'admin@ermalgame.com', points: 0, role: 'admin', status: 'approved', requiresPasswordChange: true }
+        ];
+
         if (isRegister) {
           if (!username.trim() || !email || !password) {
             setError('Compila tutti i campi.');
             setLoading(false);
             return;
           }
-          const newUser = { id: username.toLowerCase(), name: username, email, points: 0, role: 'player' };
-          setCurrentUser(newUser);
-          setPlayers(prev => [newUser, { id: 'andrea', name: 'Andrea', points: 42 }, { id: 'enea', name: 'Enea', points: 30 }, { id: 'luca', name: 'Luca', points: 15 }]);
-          localStorage.setItem('currentUser', JSON.stringify(newUser));
+          const emailExists = usersList.some(u => u.email.toLowerCase() === email.toLowerCase());
+          if (emailExists) {
+            setError('Questa email è già registrata.');
+            setLoading(false);
+            return;
+          }
+
+          const newUser = { 
+            uid: username.toLowerCase(), 
+            name: username, 
+            email: email, 
+            points: 0, 
+            role: 'player', 
+            status: 'pending' 
+          };
+          usersList.push(newUser);
+          localStorage.setItem('localUsers', JSON.stringify(usersList));
+          setError('Registrazione completata! Il tuo account è in attesa di approvazione da parte di un amministratore.');
         } else {
           // Login
           if (email === 'admin@ermalgame.com' && password === 'Cambiami123!') {
-            const adminUser = { id: 'admin', name: 'Admin', email, points: 0, role: 'admin', requiresPasswordChange: true };
+            const adminUser = usersList.find(u => u.email === 'admin@ermalgame.com') || { uid: 'admin', name: 'Admin', email, points: 0, role: 'admin', status: 'approved', requiresPasswordChange: true };
             setCurrentUser(adminUser);
-            setPlayers(prev => [adminUser, { id: 'andrea', name: 'Andrea', points: 42 }, { id: 'enea', name: 'Enea', points: 30 }, { id: 'luca', name: 'Luca', points: 15 }]);
+            const approvedPlayers = usersList.filter(u => u.status === 'approved');
+            setPlayers(approvedPlayers);
             localStorage.setItem('currentUser', JSON.stringify(adminUser));
           } else if (email === 'admin@ermalgame.com') {
             setError('Password errata per l\'admin (usa Cambiami123! per la prima volta).');
           } else {
-            // Login come giocatore generico
-            const genericUser = { id: 'player1', name: email.split('@')[0], email, points: 0, role: 'player' };
-            setCurrentUser(genericUser);
-            setPlayers(prev => [genericUser, { id: 'andrea', name: 'Andrea', points: 42 }, { id: 'enea', name: 'Enea', points: 30 }, { id: 'luca', name: 'Luca', points: 15 }]);
-            localStorage.setItem('currentUser', JSON.stringify(genericUser));
+            const user = usersList.find(u => u.email.toLowerCase() === email.toLowerCase());
+            if (!user) {
+              setError('Utente non trovato. Registrati prima.');
+            } else if (user.status === 'pending') {
+              setError('Il tuo account è in attesa di approvazione da parte di un amministratore.');
+            } else {
+              setCurrentUser(user);
+              const approvedPlayers = usersList.filter(u => u.status === 'approved');
+              setPlayers(approvedPlayers);
+              localStorage.setItem('currentUser', JSON.stringify(user));
+            }
           }
         }
         setLoading(false);
@@ -75,13 +104,14 @@ export default function SetupUser() {
           name: username,
           email: user.email,
           role: 'player',
-          points: 0
+          points: 0,
+          status: 'pending'
         };
 
         await setDoc(doc(db, 'users', user.uid), profile);
         
-        setCurrentUser(profile);
-        localStorage.setItem('currentUser', JSON.stringify(profile));
+        setError('Registrazione completata! Il tuo account è in attesa di approvazione da parte di un amministratore.');
+        await auth.signOut();
       } else {
         // Login
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -91,11 +121,17 @@ export default function SetupUser() {
         const docSnap = await getDoc(doc(db, 'users', user.uid));
         if (docSnap.exists()) {
           const profile = docSnap.data();
+          if (profile.role !== 'admin' && profile.status === 'pending') {
+            await auth.signOut();
+            setError('Il tuo account è in attesa di approvazione da parte di un amministratore.');
+            setLoading(false);
+            return;
+          }
           setCurrentUser(profile);
           localStorage.setItem('currentUser', JSON.stringify(profile));
         } else {
           // Se non esiste, crea un profilo al volo
-          const fallbackProfile = { uid: user.uid, name: user.email.split('@')[0], email: user.email, role: 'player', points: 0 };
+          const fallbackProfile = { uid: user.uid, name: user.email.split('@')[0], email: user.email, role: 'player', points: 0, status: 'approved' };
           await setDoc(doc(db, 'users', user.uid), fallbackProfile);
           setCurrentUser(fallbackProfile);
           localStorage.setItem('currentUser', JSON.stringify(fallbackProfile));

@@ -10,6 +10,9 @@ import LeaderboardView from './pages/LeaderboardView';
 import LeagueSettings from './pages/LeagueSettings';
 import SetupUser from './pages/SetupUser';
 import ChangePassword from './pages/ChangePassword';
+import UserManagement from './pages/UserManagement';
+import { auth, db } from './firebase';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 
 const AppContext = createContext();
 
@@ -117,17 +120,64 @@ export default function App() {
   const [matches, setMatches] = useState(initialMatches);
   const [tomorrowMatches, setTomorrowMatches] = useState(initialTomorrowMatches);
   const [pastMatches, setPastMatches] = useState(initialPastMatches);
-  const [players, setPlayers] = useState(() => {
-    const bots = [
-      { id: 'andrea', name: 'Andrea', points: 42 },
-      { id: 'enea', name: 'Enea', points: 30 },
-      { id: 'luca', name: 'Luca', points: 15 }
-    ];
-    if (currentUser) {
-      return [{ ...currentUser, points: 45 }, ...bots];
+  const [players, setPlayers] = useState([]);
+
+  const isDemoMode = auth.config?.apiKey === 'AIzaSyDummyKeyReplaceThisWithRealKey' || !auth.config?.apiKey;
+
+  useEffect(() => {
+    if (isDemoMode) {
+      const storedUsers = localStorage.getItem('localUsers');
+      if (storedUsers) {
+        const list = JSON.parse(storedUsers);
+        setPlayers(list.filter(u => u.status === 'approved'));
+      } else {
+        const bots = [
+          { uid: 'andrea', name: 'Andrea', points: 42, role: 'player', status: 'approved' },
+          { uid: 'enea', name: 'Enea', points: 30, role: 'player', status: 'approved' },
+          { uid: 'luca', name: 'Luca', points: 15, role: 'player', status: 'approved' }
+        ];
+        if (currentUser) {
+          const currentInList = bots.some(b => b.uid === currentUser.uid);
+          if (!currentInList) {
+            setPlayers([currentUser, ...bots]);
+          } else {
+            setPlayers(bots);
+          }
+        } else {
+          setPlayers(bots);
+        }
+      }
+    } else {
+      const fetchPlayers = async () => {
+        try {
+          const q = query(collection(db, 'users'), where('status', '==', 'approved'));
+          const querySnapshot = await getDocs(q);
+          const list = [];
+          querySnapshot.forEach((docSnap) => {
+            list.push({ uid: docSnap.id, ...docSnap.data() });
+          });
+          
+          if (list.length === 0) {
+            const bots = [
+              { uid: 'andrea', name: 'Andrea', points: 42, role: 'player', status: 'approved' },
+              { uid: 'enea', name: 'Enea', points: 30, role: 'player', status: 'approved' },
+              { uid: 'luca', name: 'Luca', points: 15, role: 'player', status: 'approved' }
+            ];
+            if (currentUser) {
+              setPlayers([currentUser, ...bots]);
+            } else {
+              setPlayers(bots);
+            }
+          } else {
+            setPlayers(list);
+          }
+        } catch (e) {
+          console.error("Errore nel recupero dei giocatori da Firestore:", e);
+        }
+      };
+      fetchPlayers();
     }
-    return [];
-  });
+  }, [currentUser, isDemoMode]);
 
   const [predictions, setPredictions] = useState({});
   const [conditionalPenalties, setConditionalPenalties] = useState({});
@@ -380,6 +430,7 @@ export default function App() {
                 <Route path="/match/:id" element={<MatchDetail />} />
                 <Route path="/leaderboard" element={<LeaderboardView />} />
                 <Route path="/settings" element={<LeagueSettings />} />
+                <Route path="/admin/users" element={<UserManagement />} />
               </Routes>
               <BottomNav />
             </>
