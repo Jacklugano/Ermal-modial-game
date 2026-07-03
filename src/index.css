@@ -1,0 +1,266 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap');
+
+:root {
+  --bg-dark: #121212;
+  --surface: #1e1e1e;
+  --surface-light: #2c2c2c;
+  --accent: #14b8a6; /* Verde acceso Fotmob/Bet365 style */
+  --accent-hover: #0d9488;
+  --text-main: #ffffff;
+  --text-muted: #a0a0a0;
+  --border: #333333;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: 70px;
+}
+
+/* Mobile First Container */
+.app-container {
+  max-width: 500px;
+  margin: 0 auto;
+  background-color: var(--bg-dark);
+  min-height: 100vh;
+  position: relative;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+.panel {
+  background-color: var(--surface);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.header-top {
+  position: sticky;
+  top: 0;
+  background-color: var(--surface);
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 10;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Typography */
+h1, h2, h3 { font-weight: 700; }
+.text-accent { color: var(--accent); }
+.text-muted { color: var(--text-muted); }
+
+/* Buttons */
+.btn {
+  background-color: var(--accent);
+  color: #000;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+  width: 100%;
+}
+.btn:hover { background-color: var(--accent-hover); }
+
+.btn-secondary {
+  background-color: var(--surface-light);
+  color: var(--text-main);
+}
+.btn-secondary:hover { background-color: var(--border); }
+
+/* Inputs */
+.input-field, .select-field {
+  width: 100%;
+  background-color: var(--surface-light);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-family: 'Roboto', sans-serif;
+  font-size: 1rem;
+  outline: none;
+}
+.input-field:focus, .select-field:focus { border-color: var(--accent); }
+
+/* Bottom Nav */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 500px;
+  background-color: var(--surface);
+  display: flex;
+  justify-content: space-around;
+  padding: 0.8rem 0;
+  border-top: 1px solid var(--border);
+  z-index: 100;
+}
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.75rem;
+  gap: 4px;
+}
+.nav-item.active { color: var(--accent); }
+
+/* Market Grid (Odds style) */
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+.odd-btn {
+  background-color: var(--surface-light);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  padding: 12px 8px;
+  border-radius: 6px;
+  text-align: center;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  user-select: none;
+}
+.odd-btn.selected {
+  background-color: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+}
+.odd-label { font-size: 0.9rem; font-weight: 700; margin-bottom: 2px; }
+.odd-pts { font-size: 0.75rem; opacity: 0.8; font-weight: 500; }
+
+/* Match Row */
+.match-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+.match-row:last-child { border-bottom: none; }
+.match-time { width: 50px; font-size: 0.85rem; color: var(--text-muted); text-align: center; font-weight: 500; }
+.match-teams { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 0 12px; }
+.team-line { display: flex; align-items: center; justify-content: space-between; }
+.team-name { display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 1rem; }
+.match-score { font-weight: 700; color: var(--accent); font-size: 1.1rem; }
+
+/* Score Input specific */
+.score-input-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: var(--surface-light);
+  padding: 20px;
+  border-radius: 12px;
+}
+.score-box {
+  background: var(--bg-dark);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+}
+.score-input {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  color: white;
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  outline: none;
+}
+
+/* Push Notification iOS style Banner */
+.push-banner {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 92%;
+  max-width: 460px;
+  background: rgba(30, 30, 30, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  animation: slideDownFade 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.push-icon-container {
+  background: rgba(20, 184, 166, 0.15);
+  padding: 8px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.push-content {
+  flex: 1;
+}
+.push-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 2px;
+}
+.push-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+@keyframes slideDownFade {
+  from {
+    transform: translate(-50%, -30px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
