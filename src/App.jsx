@@ -12,7 +12,7 @@ import SetupUser from './pages/SetupUser';
 import ChangePassword from './pages/ChangePassword';
 import UserManagement from './pages/UserManagement';
 import { auth, db } from './firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, addDoc, serverTimestamp, orderBy, onSnapshot } from 'firebase/firestore';
 
 const AppContext = createContext();
 
@@ -209,27 +209,115 @@ export default function App() {
   const [globalMessages, setGlobalMessages] = useState(initialGlobalMessages);
   const [matchMessages, setMatchMessages] = useState(initialMatchMessages);
 
-  const addGlobalMessage = (text) => {
+  useEffect(() => {
+    if (isDemoMode) {
+      setGlobalMessages(initialGlobalMessages);
+      setMatchMessages(initialMatchMessages);
+      return;
+    }
+
+    try {
+      const q = query(collection(db, 'messages'), orderBy('timestamp', 'asc'));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const allGlobal = [];
+        const allMatch = {};
+        
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const timeStr = data.time || (data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '');
+          const msg = {
+            id: docSnap.id,
+            user: data.user,
+            text: data.text,
+            time: timeStr
+          };
+          
+          if (data.matchId === 'global' || !data.matchId) {
+            allGlobal.push(msg);
+          } else {
+            const mId = data.matchId;
+            if (!allMatch[mId]) {
+              allMatch[mId] = [];
+            }
+            allMatch[mId].push(msg);
+          }
+        });
+        
+        if (allGlobal.length === 0) {
+          setGlobalMessages(initialGlobalMessages);
+        } else {
+          setGlobalMessages(allGlobal);
+        }
+        
+        setMatchMessages(prev => ({
+          ...initialMatchMessages,
+          ...allMatch
+        }));
+      }, (err) => {
+        console.error("Errore nella lettura dei messaggi real-time:", err);
+      });
+      
+      return () => unsubscribe();
+    } catch (e) {
+      console.error("Errore nell'inizializzazione del listener messaggi:", e);
+    }
+  }, [currentUser, isDemoMode]);
+
+  const addGlobalMessage = async (text) => {
     if (!currentUser) return;
-    const now = new Date();
-    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    setGlobalMessages(prev => [
-      ...prev,
-      { id: Date.now(), user: currentUser.name, text, time: timeStr }
-    ]);
+    
+    if (isDemoMode) {
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      setGlobalMessages(prev => [
+        ...prev,
+        { id: Date.now(), user: currentUser.name, text, time: timeStr }
+      ]);
+    } else {
+      try {
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        await addDoc(collection(db, 'messages'), {
+          user: currentUser.name,
+          userId: currentUser.uid || currentUser.id,
+          text: text,
+          matchId: 'global',
+          timestamp: serverTimestamp(),
+          time: timeStr
+        });
+      } catch (e) {
+        console.error("Errore nell'invio del messaggio globale:", e);
+      }
+    }
   };
 
-  const addMatchMessage = (matchId, text) => {
+  const addMatchMessage = async (matchId, text) => {
     if (!currentUser) return;
-    const now = new Date();
-    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    setMatchMessages(prev => {
-      const currentList = prev[matchId] || [];
-      return {
-        ...prev,
-        [matchId]: [...currentList, { id: Date.now(), user: currentUser.name, text, time: timeStr }]
-      };
-    });
+    
+    if (isDemoMode) {
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      setMatchMessages(prev => {
+        const currentList = prev[matchId] || [];
+        return {
+          ...prev,
+          [matchId]: [...currentList, { id: Date.now(), user: currentUser.name, text, time: timeStr }]
+        };
+      });
+    } else {
+      try {
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        await addDoc(collection(db, 'messages'), {
+          user: currentUser.name,
+          userId: currentUser.uid || currentUser.id,
+          text: text,
+          matchId: matchId,
+          timestamp: serverTimestamp(),
+          time: timeStr
+        });
+      } catch (e) {
+        console.error("Errore nell'invio del messaggio di partita:", e);
+      }
+    }
   };
 
   const getPointsForPrediction = (pred, match) => {
