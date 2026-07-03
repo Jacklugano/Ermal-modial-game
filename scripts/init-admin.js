@@ -50,7 +50,8 @@ async function run() {
       name: 'Admin',
       email: adminEmail,
       role: 'admin',
-      requiresPasswordChange: true
+      requiresPasswordChange: true,
+      status: 'approved'
     });
     
     console.log("------------------------------------------");
@@ -61,7 +62,24 @@ async function run() {
     console.log("Ora puoi deployare ed effettuare il login. Ti verrà chiesto di cambiarla subito.");
   } catch (error) {
     if (error.code === 'auth/email-already-in-use') {
-      console.log("L'utente admin esiste già.");
+      console.log("L'utente admin esiste già in Auth. Tento di aggiornare Firestore...");
+      try {
+        const { signInWithEmailAndPassword } = await import('firebase/auth');
+        const userCredential = await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
+        const user = userCredential.user;
+        await setDoc(doc(db, 'users', user.uid), {
+          uid: user.uid,
+          name: 'Admin',
+          email: adminEmail,
+          role: 'admin',
+          requiresPasswordChange: true,
+          status: 'approved'
+        });
+        console.log("🏆 Profilo Admin Firestore aggiornato/ripristinato con successo!");
+      } catch (signInError) {
+        console.log("Impossibile accedere per ricreare il record in Firestore.");
+        console.log("Se la password è già stata cambiata, il record dovrebbe essere già consistente.");
+      }
     } else {
       console.error("Errore nella creazione dell'admin:", error);
     }
